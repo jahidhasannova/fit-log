@@ -16,7 +16,7 @@ export default function RootLayout({ children }) {
         <FitLogProvider>
           {children}
           <Footer />
-          <ToastContainer position="top-center" />
+          <ToastContainer position="top-right" />
         </FitLogProvider>
       </body>
     </html>
