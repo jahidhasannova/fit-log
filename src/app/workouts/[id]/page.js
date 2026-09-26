@@ -13,9 +13,12 @@ import {
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import { useFitLog } from "@/context/FitLogContext";
 
 export default function WorkoutDetails() {
   const { id } = useParams();
+
+  const { plan, saved, addToPlan, addToSaved } = useFitLog();
 
   const [workout, setWorkout] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -92,44 +95,28 @@ export default function WorkoutDetails() {
   }
 
   const handleAddToPlan = () => {
-    const existingPlan = JSON.parse(
-      localStorage.getItem("fitlog-plan") || "[]"
-    );
+    const added = addToPlan(workout);
 
-    if (existingPlan.length >= 5) {
-      toast.info("Today's plan is full");
+    if (!added) {
+      if (plan.length >= 5) {
+        toast.info("Today's plan is full");
+      } else {
+        toast.info("Workout is already in today's plan");
+      }
+
       return;
     }
-
-    if (existingPlan.some((item) => item.id === workout.id)) {
-      toast.info("Workout is already in today's plan");
-      return;
-    }
-
-    const updatedPlan = [...existingPlan, workout];
-
-    localStorage.setItem("fitlog-plan", JSON.stringify(updatedPlan));
-
-    window.dispatchEvent(new Event("fitlog-updated"));
 
     toast.success("Added to today's plan");
   };
 
   const handleSave = () => {
-    const existingSaved = JSON.parse(
-      localStorage.getItem("fitlog-saved") || "[]"
-    );
+    const added = addToSaved(workout);
 
-    if (existingSaved.some((item) => item.id === workout.id)) {
+    if (!added) {
       toast.info("Workout is already saved");
       return;
     }
-
-    const updatedSaved = [...existingSaved, workout];
-
-    localStorage.setItem("fitlog-saved", JSON.stringify(updatedSaved));
-
-    window.dispatchEvent(new Event("fitlog-updated"));
 
     toast.success("Saved for later");
   };
@@ -186,25 +173,10 @@ export default function WorkoutDetails() {
 
               <div className="mt-8 rounded-2xl border border-white/10 bg-zinc-900 p-6">
                 <div className="space-y-4">
-                  <Spec
-                    label="Equipment"
-                    value={workout.equipment}
-                  />
-
-                  <Spec
-                    label="Difficulty"
-                    value={workout.difficulty}
-                  />
-
-                  <Spec
-                    label="Sets"
-                    value={workout.sets || "4"}
-                  />
-
-                  <Spec
-                    label="Reps"
-                    value={workout.reps || "6-8"}
-                  />
+                  <Spec label="Equipment" value={workout.equipment} />
+                  <Spec label="Difficulty" value={workout.difficulty} />
+                  <Spec label="Sets" value={workout.sets || "4"} />
+                  <Spec label="Reps" value={workout.reps || "6-8"} />
 
                   <Spec
                     label="Duration"
@@ -256,6 +228,7 @@ export default function WorkoutDetails() {
 
               <div className="mt-10 flex flex-wrap gap-4">
                 <button
+                  type="button"
                   onClick={handleAddToPlan}
                   className="inline-flex items-center gap-2 rounded-3xl bg-lime-400 px-6 py-4 font-black uppercase text-black transition hover:bg-lime-300"
                 >
@@ -264,6 +237,7 @@ export default function WorkoutDetails() {
                 </button>
 
                 <button
+                  type="button"
                   onClick={handleSave}
                   className="inline-flex items-center gap-2 rounded-3xl border border-white/20 px-6 py-4 font-black uppercase text-white transition hover:border-lime-400 hover:text-lime-400"
                 >

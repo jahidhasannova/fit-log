@@ -9,72 +9,35 @@ import {
   Check,
   ChevronDown,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import Navbar from "@/components/Navbar";
+import { useFitLog } from "@/context/FitLogContext";
 
 export default function MyPlan() {
-  const [plan, setPlan] = useState([]);
-  const [saved, setSaved] = useState([]);
+  const {
+    plan,
+    saved,
+    removeFromPlan,
+    removeFromSaved,
+  } = useFitLog();
+
   const [activeTab, setActiveTab] = useState("plan");
-  const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState("duration");
   const [sortOpen, setSortOpen] = useState(false);
 
-  useEffect(() => {
-    const loadWorkouts = () => {
-      const storedPlan = JSON.parse(
-        localStorage.getItem("fitlog-plan") || "[]"
-      );
-
-      const storedSaved = JSON.parse(
-        localStorage.getItem("fitlog-saved") || "[]"
-      );
-
-      setPlan(storedPlan);
-      setSaved(storedSaved);
-      setLoading(false);
-    };
-
-    loadWorkouts();
-
-    window.addEventListener("fitlog-updated", loadWorkouts);
-
-    return () => {
-      window.removeEventListener("fitlog-updated", loadWorkouts);
-    };
-  }, []);
-
-  const removeFromPlan = (id) => {
-    const updatedPlan = plan.filter((item) => item.id !== id);
-
-    setPlan(updatedPlan);
-    localStorage.setItem("fitlog-plan", JSON.stringify(updatedPlan));
-
-    window.dispatchEvent(new Event("fitlog-updated"));
-
+  const handleRemoveFromPlan = (id) => {
+    removeFromPlan(id);
     toast.error("Removed from today's plan");
   };
 
-  const removeFromSaved = (id) => {
-    const updatedSaved = saved.filter((item) => item.id !== id);
-
-    setSaved(updatedSaved);
-    localStorage.setItem("fitlog-saved", JSON.stringify(updatedSaved));
-
-    window.dispatchEvent(new Event("fitlog-updated"));
-
+  const handleRemoveFromSaved = (id) => {
+    removeFromSaved(id);
     toast.error("Removed from saved");
   };
 
-  const markAsDone = (id) => {
-    const updatedPlan = plan.filter((item) => item.id !== id);
-
-    setPlan(updatedPlan);
-    localStorage.setItem("fitlog-plan", JSON.stringify(updatedPlan));
-
-    window.dispatchEvent(new Event("fitlog-updated"));
-
+  const handleMarkAsDone = (id) => {
+    removeFromPlan(id);
     toast.success("Workout marked as done");
   };
 
@@ -83,7 +46,8 @@ export default function MyPlan() {
     setSortOpen(false);
   };
 
-  const currentWorkouts = activeTab === "plan" ? plan : saved;
+  const currentWorkouts =
+    activeTab === "plan" ? plan : saved;
 
   const sortedWorkouts = [...currentWorkouts].sort((a, b) => {
     if (sortBy === "duration") {
@@ -104,33 +68,20 @@ export default function MyPlan() {
     return 0;
   });
 
+  // Metrics change according to the selected tab.
+  const totalExercises = currentWorkouts.length;
+
   const totalMinutes = currentWorkouts.reduce(
-    (total, workout) => total + Number(workout.duration || 0),
+    (total, workout) =>
+      total + Number(workout.duration || 0),
     0
   );
 
   const totalCalories = currentWorkouts.reduce(
-    (total, workout) => total + Number(workout.caloriesBurned || 0),
+    (total, workout) =>
+      total + Number(workout.caloriesBurned || 0),
     0
   );
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-black text-white">
-        <Navbar />
-
-        <div className="flex min-h-[80vh] items-center justify-center">
-          <div className="text-center">
-            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-zinc-700 border-t-lime-400"></div>
-
-            <p className="text-lg font-bold uppercase">
-              Loading workouts...
-            </p>
-          </div>
-        </div>
-      </main>
-    );
-  }
 
   return (
     <main className="min-h-screen bg-black text-white">
@@ -161,7 +112,7 @@ export default function MyPlan() {
               </p>
 
               <p className="mt-2 text-3xl font-black text-lime-400">
-                {currentWorkouts.length}
+                {totalExercises}
               </p>
 
               <span className="absolute right-0 top-1/2 h-12 w-px -translate-y-1/2 bg-white/20"></span>
@@ -193,6 +144,7 @@ export default function MyPlan() {
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex w-fit gap-2 rounded-xl border border-white/10 bg-zinc-900/50 p-2">
               <button
+                type="button"
                 onClick={() => setActiveTab("plan")}
                 className={`rounded-lg px-5 py-3 text-sm font-black uppercase transition ${
                   activeTab === "plan"
@@ -204,6 +156,7 @@ export default function MyPlan() {
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab("saved")}
                 className={`rounded-lg px-5 py-3 text-sm font-black uppercase transition ${
                   activeTab === "saved"
@@ -256,7 +209,9 @@ export default function MyPlan() {
                         <span>{label}</span>
 
                         {sortBy === value && (
-                          <span className="text-lime-400">✓</span>
+                          <span className="text-lime-400">
+                            ✓
+                          </span>
                         )}
                       </button>
                     ))}
@@ -273,7 +228,9 @@ export default function MyPlan() {
               </h2>
 
               <p className="mx-auto mt-4 max-w-md text-gray-400">
-                Browse the library and add a lift to get today moving.
+                {activeTab === "plan"
+                  ? "Browse the library and add a lift to get today moving."
+                  : "Save a workout from the library to see it here later."}
               </p>
 
               <Link
@@ -348,7 +305,10 @@ export default function MyPlan() {
 
                         {activeTab === "plan" && (
                           <button
-                            onClick={() => markAsDone(workout.id)}
+                            type="button"
+                            onClick={() =>
+                              handleMarkAsDone(workout.id)
+                            }
                             className="inline-flex items-center gap-1 rounded-full border border-lime-400/40 px-4 py-2.5 text-xs font-black uppercase text-lime-400 transition hover:bg-lime-400 hover:text-black"
                           >
                             <Check size={14} />
@@ -357,11 +317,14 @@ export default function MyPlan() {
                         )}
 
                         <button
-                          onClick={() =>
-                            activeTab === "plan"
-                              ? removeFromPlan(workout.id)
-                              : removeFromSaved(workout.id)
-                          }
+                          type="button"
+                          onClick={() => {
+                            if (activeTab === "plan") {
+                              handleRemoveFromPlan(workout.id);
+                            } else {
+                              handleRemoveFromSaved(workout.id);
+                            }
+                          }}
                           className="inline-flex items-center justify-center rounded-full border border-white/20 bg-black p-2.5 text-gray-400 transition hover:border-red-400 hover:text-red-400"
                           aria-label="Remove workout"
                         >
@@ -379,4 +342,3 @@ export default function MyPlan() {
     </main>
   );
 }
-

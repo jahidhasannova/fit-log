@@ -3,34 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import logo from "@/assets/logo.png";
+import { useFitLog } from "@/context/FitLogContext";
 
 export default function Navbar() {
   const pathname = usePathname();
 
-  const [planCount, setPlanCount] = useState(0);
-  const [savedCount, setSavedCount] = useState(0);
-
-  useEffect(() => {
-    const updateCounts = () => {
-      const plan = JSON.parse(localStorage.getItem("fitlog-plan") || "[]");
-      const saved = JSON.parse(localStorage.getItem("fitlog-saved") || "[]");
-
-      setPlanCount(plan.length);
-      setSavedCount(saved.length);
-    };
-
-    updateCounts();
-
-    window.addEventListener("storage", updateCounts);
-    window.addEventListener("fitlog-updated", updateCounts);
-
-    return () => {
-      window.removeEventListener("storage", updateCounts);
-      window.removeEventListener("fitlog-updated", updateCounts);
-    };
-  }, []);
+  const { plan, saved } = useFitLog();
 
   const workoutActive =
     pathname === "/" || pathname.startsWith("/workouts");
@@ -40,8 +19,6 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 border-b border-white/10 bg-black">
       <div className="mx-auto flex min-h-20 max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
-
-        {/* Logo */}
         <Link href="/" className="flex items-center gap-3">
           <Image
             src={logo}
@@ -55,7 +32,6 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Navigation */}
         <div className="order-3 flex w-full items-center justify-center gap-6 sm:order-none sm:w-auto sm:gap-8">
           <Link
             href="/"
@@ -80,7 +56,6 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Counters */}
         <div className="flex items-center gap-5">
           <Link
             href="/my-plan"
@@ -89,7 +64,7 @@ export default function Navbar() {
             Plan
 
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-lime-400 text-xs font-black text-black">
-              {planCount}
+              {plan.length}
             </span>
           </Link>
 
@@ -100,11 +75,10 @@ export default function Navbar() {
             Saved
 
             <span className="flex h-7 w-7 items-center justify-center rounded-full border border-white/30 text-xs font-black text-white">
-              {savedCount}
+              {saved.length}
             </span>
           </Link>
         </div>
-
       </div>
     </nav>
   );
